@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@layer base {
+  html, body, #root {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+/* Keep all interactive controls, socket labels, and panel titles ABOVE the z-20 WireOverlay! */
+.trainer-workspace button {
+  position: relative;
+  z-index: 25;
+}
+
+.trainer-workspace .socket-label-pill {
+  position: relative;
+  z-index: 26;
+  background-color: rgba(2, 6, 23, 0.88);
+  padding: 1px 5px;
+  border-radius: 6px;
+  border: 1px solid rgba(51, 65, 85, 0.65);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.trainer-workspace span.uppercase {
+  position: relative;
+  z-index: 24;
+  background-color: rgba(15, 23, 42, 0.85);
+  padding: 1px 5px;
+  border-radius: 5px;
+}
+
+@keyframes dashFlowForward {
+  from {
+    stroke-dashoffset: 28;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes dashFlowAC {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dashoffset: 14;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.wire-flow-dc {
+  animation: dashFlowForward 0.55s linear infinite;
+}
+
+.wire-flow-ac {
+  animation: dashFlowAC 0.22s ease-in-out infinite;
+}
