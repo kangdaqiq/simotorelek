@@ -20,6 +20,8 @@ export const ToolFloatingPanel: React.FC<ToolFloatingPanelProps> = ({
 }) => {
   const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [holdValue, setHoldValue] = useState<{ display: string; unit: string } | null>(null);
+  const [clampZero, setClampZero] = useState(false);
+  const [clampHold, setClampHold] = useState<number | null>(null);
   const dragStartRef = useRef<{ px: number; py: number; ox: number; oy: number } | null>(null);
 
   const redJackRef = useRef<HTMLDivElement | null>(null);
@@ -61,9 +63,14 @@ export const ToolFloatingPanel: React.FC<ToolFloatingPanelProps> = ({
   // Clear HOLD when changing multimeter mode
   useEffect(() => {
     setHoldValue(null);
+    setClampHold(null);
   }, [tools.multimeterMode, tools.activeTool]);
 
-  if (tools.activeTool !== 'MULTIMETER' && tools.activeTool !== 'TEST_LAMP') {
+  if (
+    tools.activeTool !== 'MULTIMETER' &&
+    tools.activeTool !== 'TEST_LAMP' &&
+    tools.activeTool !== 'CLAMP_METER'
+  ) {
     return null;
   }
 
@@ -205,6 +212,167 @@ export const ToolFloatingPanel: React.FC<ToolFloatingPanelProps> = ({
             <div className="text-[9px] text-amber-300 mt-0.5">
               {tools.testLampTargetNext === 'TIP' ? '👆 Siap tusuk uji!' : 'Klik untuk pilih'}
             </div>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ==================== DC CLAMP METER (TANG AMPERE OTOMOTIF) ====================
+  if (tools.activeTool === 'CLAMP_METER') {
+    const rawAmps = sim.clampReading.currentAmps;
+    const isHold = clampHold !== null;
+    const displayVal = isHold ? clampHold : clampZero ? 0.0 : rawAmps;
+    const mode = tools.clampMode || sim.clampReading.mode || 'DC';
+
+    return (
+      <div
+        style={{ transform: `translate(${offset.x}px, ${offset.y}px)` }}
+        onPointerDown={(e) => e.stopPropagation()}
+        className="absolute bottom-4 right-4 z-40 w-84 bg-slate-900/95 border-3 border-amber-400 rounded-3xl shadow-2xl p-4 text-slate-100"
+      >
+        {/* Draggable Header */}
+        <div
+          onPointerDown={startDragHeader}
+          onPointerMove={moveDragHeader}
+          onPointerUp={endDragHeader}
+          className="flex items-center justify-between border-b border-slate-700 pb-2 mb-3 cursor-grab active:cursor-grabbing"
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-xl">🧲</span>
+            <div>
+              <div className="text-sm font-black text-amber-400 tracking-wide">
+                TANG AMPERE DC (CLAMP METER)
+              </div>
+              <div className="text-[10px] text-slate-400">
+                Ukur Arus Beban & Pengisian Tanpa Lepas Kabel
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setTools((t) => ({ ...t, activeTool: 'WIRE' }))}
+            className="w-7 h-7 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center font-bold text-xs cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Realistic Digital LCD Screen */}
+        <div className="bg-slate-950 border-2 border-slate-800 rounded-2xl p-3 mb-3 shadow-inner relative overflow-hidden">
+          <div className="flex items-center justify-between text-[10px] font-mono text-emerald-400/80 mb-1">
+            <div className="flex items-center gap-2">
+              <span className="px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-500/40 font-bold">
+                {mode} A
+              </span>
+              <span>AUTO</span>
+              {isHold && (
+                <span className="px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 font-black animate-pulse">
+                  HOLD
+                </span>
+              )}
+            </div>
+            <span className="font-bold text-slate-400">HALL SENSOR</span>
+          </div>
+
+          <div className="flex items-baseline justify-end gap-1.5 my-1">
+            <span className="text-4xl font-mono font-black text-emerald-300 tracking-wider">
+              {displayVal.toFixed(2)}
+            </span>
+            <span className="text-lg font-mono font-black text-emerald-400">A</span>
+          </div>
+
+          <div className="flex items-center justify-between text-[10px] text-slate-400 border-t border-slate-800/80 pt-1 mt-1">
+            <span>Range: 0.00 ~ 60.00 A</span>
+            <span
+              className={
+                displayVal > 40
+                  ? 'text-red-400 font-bold animate-pulse'
+                  : displayVal > 2.0
+                  ? 'text-emerald-400 font-bold'
+                  : displayVal > 0.05
+                  ? 'text-amber-400'
+                  : 'text-slate-500'
+              }
+            >
+              {displayVal > 40
+                ? '⚡ ARUS CRANKING TINGGI!'
+                : displayVal > 2.0
+                ? '⚡ ARUS BEBAN AKTIF'
+                : displayVal > 0.05
+                ? '💡 ARUS KECIL / STANDBY'
+                : 'STANDBY (0.00 A)'}
+            </span>
+          </div>
+        </div>
+
+        {/* Clamped Wire Status or Instruction */}
+        <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 mb-3">
+          {tools.clampWireId ? (
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <div className="text-[10px] text-slate-400 font-semibold">Kabel Terjepit:</div>
+                <div className="text-xs font-mono font-black text-yellow-300 truncate">
+                  {sim.clampReading.activeWireLabel || tools.clampWireId}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setTools((t) => ({ ...t, clampWireId: null }))}
+                className="px-2 py-1 rounded-lg bg-red-950/80 hover:bg-red-900 border border-red-500/60 text-red-300 text-[10px] font-bold cursor-pointer shrink-0"
+              >
+                ✕ Lepas Clamp
+              </button>
+            </div>
+          ) : (
+            <div className="text-center py-1">
+              <div className="text-xs font-black text-amber-300 animate-pulse">
+                👉 Sentuh / Klik Kabel Jumper Mana Saja
+              </div>
+              <div className="text-[10px] text-slate-400 mt-0.5">
+                Rahang tang akan otomatis menjepit kabel yang Anda pilih
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Function Buttons: HOLD, ZERO, MODE */}
+        <div className="grid grid-cols-3 gap-2">
+          <button
+            type="button"
+            onClick={() => setClampHold(isHold ? null : rawAmps)}
+            className={`py-2 rounded-xl text-xs font-black transition cursor-pointer border ${
+              isHold
+                ? 'bg-amber-400 text-slate-950 border-amber-300 shadow'
+                : 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'
+            }`}
+          >
+            {isHold ? '🔓 UNHOLD' : '🔒 HOLD'}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setClampZero((z) => !z)}
+            className={`py-2 rounded-xl text-xs font-black transition cursor-pointer border ${
+              clampZero
+                ? 'bg-emerald-600 text-white border-emerald-400'
+                : 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'
+            }`}
+          >
+            {clampZero ? '✓ ZERO ON' : '⏚ ZERO / REL'}
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              setTools((t) => ({
+                ...t,
+                clampMode: (t.clampMode || 'DC') === 'DC' ? 'AC' : 'DC',
+              }))
+            }
+            className="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 text-xs font-black transition cursor-pointer"
+          >
+            {mode === 'DC' ? '⚡ KE AC' : '🔋 KE DC'}
           </button>
         </div>
       </div>

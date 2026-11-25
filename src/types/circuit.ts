@@ -188,7 +188,7 @@ export interface ComponentHealth {
   faultBrakeSwitchStuck: boolean; // Switch rem macet terhubung terus
 }
 
-export type ActiveTool = 'WIRE' | 'DELETE_WIRE' | 'TEST_LAMP' | 'MULTIMETER';
+export type ActiveTool = 'WIRE' | 'DELETE_WIRE' | 'TEST_LAMP' | 'MULTIMETER' | 'CLAMP_METER';
 export type MultimeterMode = 'OFF' | 'DCV' | 'ACV' | 'OHM';
 
 export interface ToolState {
@@ -200,11 +200,14 @@ export interface ToolState {
   testLampClipPin: PinId | null;
   testLampTipPin: PinId | null;
   testLampTargetNext: 'CLIP' | 'TIP';
+  clampWireId?: string | null;
+  clampMode?: 'DC' | 'AC';
 }
 
 export interface WireFlowState {
   mode: 'DC' | 'AC' | 'HV' | 'NONE';
   intensity: number;
+  currentAmps?: number;
 }
 
 export interface SimulationResult {
@@ -270,4 +273,11 @@ export interface SimulationResult {
     warning?: string;
   };
   testLampBrightness: number;
+  clampReading: {
+    currentAmps: number;
+    mode: 'DC' | 'AC';
+    activeWireLabel?: string;
+    wireColor?: string;
+    wireId?: string;
+  };
 }

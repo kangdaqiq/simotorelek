@@ -29,6 +29,8 @@ interface WireOverlayProps {
   wireStyle: WireRoutingStyle;
   compactGround: boolean;
   showCurrentFlow: boolean;
+  clampWireId?: string | null;
+  onClampWire?: (wireId: string) => void;
 }
 
 function buildCurvedCablePath(p1: Point, p2: Point): { d: string; mid: Point } {
@@ -172,6 +174,8 @@ export const WireOverlay: React.FC<WireOverlayProps> = React.memo(({
   wireStyle,
   compactGround,
   showCurrentFlow,
+  clampWireId,
+  onClampWire,
 }) => {
   const colorMap = React.useMemo(() => {
     const m = new Map<WireColorId, (typeof WIRE_COLORS)[number]>();
@@ -243,7 +247,7 @@ export const WireOverlay: React.FC<WireOverlayProps> = React.memo(({
   const pendingStart = pendingFromPin ? pinCoords[pendingFromPin] : null;
   const isGhost = wireVisibility === 'GHOST';
   const wireInteractive =
-    !isGhost && (activeTool === 'WIRE' || activeTool === 'DELETE_WIRE');
+    !isGhost && (activeTool === 'WIRE' || activeTool === 'DELETE_WIRE' || activeTool === 'CLAMP_METER');
 
   return (
     <svg className="absolute inset-0 w-full h-full pointer-events-none z-20 overflow-visible">
@@ -279,7 +283,9 @@ export const WireOverlay: React.FC<WireOverlayProps> = React.memo(({
               className={wireInteractive ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none'}
               onPointerDown={(e) => {
                 e.stopPropagation();
-                if (activeTool === 'DELETE_WIRE') {
+                if (activeTool === 'CLAMP_METER') {
+                  onClampWire?.(w.id);
+                } else if (activeTool === 'DELETE_WIRE') {
                   onDeleteWire(w.id);
                 } else {
                   onSelectWire(w.id);
@@ -339,7 +345,9 @@ export const WireOverlay: React.FC<WireOverlayProps> = React.memo(({
               className="cursor-pointer"
               onPointerDown={(e) => {
                 e.stopPropagation();
-                if (activeTool === 'DELETE_WIRE') {
+                if (activeTool === 'CLAMP_METER') {
+                  onClampWire?.(w.id);
+                } else if (activeTool === 'DELETE_WIRE') {
                   onDeleteWire(w.id);
                 } else {
                   onSelectWire(isSelected ? null : w.id);
@@ -431,6 +439,54 @@ export const WireOverlay: React.FC<WireOverlayProps> = React.memo(({
                 >
                   ✕ Lepas Kabel
                 </text>
+              </g>
+            )}
+
+            {/* Visual Tang Ampere Clamp Jaw wrapping around this wire */}
+            {clampWireId === w.id && (
+              <g
+                transform={`translate(${mid.x}, ${mid.y})`}
+                className="cursor-pointer select-none"
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  onClampWire?.('');
+                }}
+              >
+                {/* Outer clamp loop surrounding cable */}
+                <ellipse cx={0} cy={0} rx={22} ry={13} fill="none" stroke="#dc2626" strokeWidth={5} />
+                <ellipse cx={0} cy={0} rx={22} ry={13} fill="none" stroke="#fef08a" strokeWidth={1.5} />
+                {/* Tang Body & Jaw Hinge */}
+                <path d="M -12 -12 L -22 -28 L -6 -28 Z" fill="#b91c1c" />
+                <path d="M 12 -12 L 22 -28 L 6 -28 Z" fill="#b91c1c" />
+                <rect x={-14} y={-42} width={28} height={16} rx={4} fill="#f59e0b" stroke="#ffffff" strokeWidth={1.2} />
+                <text x={0} y={-31} textAnchor="middle" fill="#020617" fontSize={7.5} fontWeight="900">
+                  CLAMP
+                </text>
+
+                {/* Digital Ampere Badge */}
+                <g transform="translate(0, 22)">
+                  <rect
+                    x={-46}
+                    y={-11}
+                    width={92}
+                    height={22}
+                    rx={11}
+                    fill="#020617"
+                    stroke="#eab308"
+                    strokeWidth={1.8}
+                  />
+                  <text
+                    x={0}
+                    y={4}
+                    textAnchor="middle"
+                    fill="#fef08a"
+                    fontSize={11}
+                    fontWeight="900"
+                    fontFamily="monospace"
+                  >
+                    🧲 {(flow?.currentAmps || 0).toFixed(2)} A
+                  </text>
+                </g>
               </g>
             )}
           </g>

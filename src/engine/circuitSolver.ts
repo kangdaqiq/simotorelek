@@ -216,7 +216,8 @@ function markConductiveWires(
   targets: PinId[],
   mode: 'DC' | 'AC' | 'HV',
   intensity: number,
-  wireFlows: Record<string, WireFlowState>
+  wireFlows: Record<string, WireFlowState>,
+  amps = 0
 ) {
   const targetSet = new Set(targets);
   const distFromSrc = new Map<PinId, number>();
@@ -254,9 +255,12 @@ function markConductiveWires(
       if (prevDist !== undefined && prevDist === curDist - 1) {
         if (e.wireId) {
           const prev = wireFlows[e.wireId];
-          if (!prev || prev.mode === 'NONE' || intensity >= prev.intensity) {
-            wireFlows[e.wireId] = { mode, intensity };
-          }
+          const prevAmps = prev?.currentAmps || 0;
+          wireFlows[e.wireId] = {
+            mode: prev && prev.mode !== 'NONE' && prev.mode !== mode && mode === 'DC' ? prev.mode : mode,
+            intensity: Math.max(prev?.intensity || 0, intensity),
+            currentAmps: Number((prevAmps + amps).toFixed(2)),
+          };
         }
         if (!revVisited.has(e.to)) {
           revVisited.add(e.to);
@@ -277,7 +281,7 @@ export function solveCircuit(
 ): SimulationResult {
   const wireFlows: Record<string, WireFlowState> = {};
   for (const w of wires) {
-    wireFlows[w.id] = { mode: 'NONE', intensity: 0 };
+    wireFlows[w.id] = { mode: 'NONE', intensity: 0, currentAmps: 0 };
   }
 
   const headGndIntact = !health.faultGroundHeadBroken;
@@ -721,40 +725,40 @@ export function solveCircuit(
     ? Number((1.8 + (effectiveRpm / 8000) * 2.2 - dcLoadAmps * 0.12).toFixed(1))
     : Number((-dcLoadAmps).toFixed(1));
 
-  // Highlight Modul 2 active wires
+  // Highlight Modul 2 active wires with accurate Ampere values
   if (starterMotorSpinning) {
-    markConductiveWires(gClean.adj, ['BAT_POS'], ['ST_MOT_POS'], 'DC', 1.2, wireFlows);
-    markConductiveWires(gClean.adj, ['ST_MOT_GND'], ['BAT_NEG'], 'DC', 1.2, wireFlows);
+    markConductiveWires(gClean.adj, ['BAT_POS'], ['ST_MOT_POS'], 'DC', 1.2, wireFlows, 45.0);
+    markConductiveWires(gClean.adj, ['ST_MOT_GND'], ['BAT_NEG'], 'DC', 1.2, wireFlows, 45.0);
   }
   if (starterRelayEnergized) {
     if (dsuClean.same('ST_RLY_85', 'BAT_POS')) {
-      markConductiveWires(gClean.adj, ['BAT_POS'], ['ST_RLY_85'], 'DC', 0.9, wireFlows);
-      markConductiveWires(gClean.adj, ['ST_RLY_86'], ['BAT_NEG'], 'DC', 0.9, wireFlows);
+      markConductiveWires(gClean.adj, ['BAT_POS'], ['ST_RLY_85'], 'DC', 0.9, wireFlows, 0.8);
+      markConductiveWires(gClean.adj, ['ST_RLY_86'], ['BAT_NEG'], 'DC', 0.9, wireFlows, 0.8);
     } else {
-      markConductiveWires(gClean.adj, ['BAT_POS'], ['ST_RLY_86'], 'DC', 0.9, wireFlows);
-      markConductiveWires(gClean.adj, ['ST_RLY_85'], ['BAT_NEG'], 'DC', 0.9, wireFlows);
+      markConductiveWires(gClean.adj, ['BAT_POS'], ['ST_RLY_86'], 'DC', 0.9, wireFlows, 0.8);
+      markConductiveWires(gClean.adj, ['ST_RLY_85'], ['BAT_NEG'], 'DC', 0.9, wireFlows, 0.8);
     }
   }
   if (cdiPowered) {
     if (slots.cdi === 'MATIC_DC') {
-      markConductiveWires(gClean.adj, ['BAT_POS'], ['CDI_PWR'], 'DC', 0.9, wireFlows);
-      markConductiveWires(gClean.adj, ['CDI_GND'], ['BAT_NEG'], 'DC', 0.9, wireFlows);
-      markConductiveWires(gClean.adj, ['CDI_SIDESTAND'], ['BAT_NEG'], 'DC', 0.75, wireFlows);
+      markConductiveWires(gClean.adj, ['BAT_POS'], ['CDI_PWR'], 'DC', 0.9, wireFlows, 0.55);
+      markConductiveWires(gClean.adj, ['CDI_GND'], ['BAT_NEG'], 'DC', 0.9, wireFlows, 0.55);
+      markConductiveWires(gClean.adj, ['CDI_SIDESTAND'], ['BAT_NEG'], 'DC', 0.75, wireFlows, 0.05);
     } else {
-      markConductiveWires(gClean.adj, ['SPUL_CDI_AC'], ['CDI_PWR'], 'AC', 1.0, wireFlows);
-      markConductiveWires(gClean.adj, ['CDI_GND'], ['ALT_GND'], 'AC', 1.0, wireFlows);
+      markConductiveWires(gClean.adj, ['SPUL_CDI_AC'], ['CDI_PWR'], 'AC', 1.0, wireFlows, 0.15);
+      markConductiveWires(gClean.adj, ['CDI_GND'], ['ALT_GND'], 'AC', 1.0, wireFlows, 0.15);
     }
   }
   if (cdiTriggered) {
-    markConductiveWires(gClean.adj, ['PULSER_POS'], ['CDI_PULSER'], 'AC', 0.85, wireFlows);
+    markConductiveWires(gClean.adj, ['PULSER_POS'], ['CDI_PULSER'], 'AC', 0.85, wireFlows, 0.03);
   }
   if (cdiTriggered && coilConnected) {
-    markConductiveWires(gClean.adj, ['CDI_COIL'], ['COIL_POS'], 'AC', 1.0, wireFlows);
-    markConductiveWires(gClean.adj, ['COIL_GND'], ['CDI_GND'], 'DC', 0.9, wireFlows);
+    markConductiveWires(gClean.adj, ['CDI_COIL'], ['COIL_POS'], 'AC', 1.0, wireFlows, 1.2);
+    markConductiveWires(gClean.adj, ['COIL_GND'], ['CDI_GND'], 'DC', 0.9, wireFlows, 1.2);
   }
   if (sparkActive) {
-    markConductiveWires(gClean.adj, ['COP_OUT'], ['PLUG_TOP'], 'HV', 1.3, wireFlows);
-    markConductiveWires(gClean.adj, ['PLUG_GND'], ['COIL_GND'], 'DC', 1.0, wireFlows);
+    markConductiveWires(gClean.adj, ['COP_OUT'], ['PLUG_TOP'], 'HV', 1.3, wireFlows, 0.08);
+    markConductiveWires(gClean.adj, ['PLUG_GND'], ['COIL_GND'], 'DC', 1.0, wireFlows, 0.08);
   }
 
   // Evaluate 2-pin loads (including realistic ~65% voltage drop if path passes through a CORRODED 18.5-ohm wire!)
@@ -762,7 +766,8 @@ export function solveCircuit(
     p1: PinId,
     p2: PinId,
     intact: boolean,
-    recordWireFlow: boolean
+    recordWireFlow: boolean,
+    ohms = 10
   ): { vDC: number; vAC: number; droppedByCorrosion: boolean } => {
     if (!intact) return { vDC: 0, vAC: 0, droppedByCorrosion: false };
     let vDC = 0;
@@ -778,8 +783,9 @@ export function solveCircuit(
         if (recordWireFlow) {
           const hi = dsuClean.same(p1, 'BAT_POS') ? p1 : p2;
           const lo = hi === p1 ? p2 : p1;
-          markConductiveWires(gClean.adj, ['BAT_POS'], [hi], 'DC', vDC / 12, wireFlows);
-          markConductiveWires(gClean.adj, [lo], ['BAT_NEG'], 'DC', vDC / 12, wireFlows);
+          const branchAmps = ohms > 0 ? Number((vDC / ohms).toFixed(2)) : 0;
+          markConductiveWires(gClean.adj, ['BAT_POS'], [hi], 'DC', vDC / 12, wireFlows, branchAmps);
+          markConductiveWires(gClean.adj, [lo], ['BAT_NEG'], 'DC', vDC / 12, wireFlows, branchAmps);
         }
       } else if (
         (dsuCorroded.same(p1, 'BAT_POS') && dsuCorroded.same(p2, 'BAT_NEG')) ||
@@ -791,8 +797,9 @@ export function solveCircuit(
         if (recordWireFlow) {
           const hi = dsuCorroded.same(p1, 'BAT_POS') ? p1 : p2;
           const lo = hi === p1 ? p2 : p1;
-          markConductiveWires(gWithCorroded.adj, ['BAT_POS'], [hi], 'DC', 0.3, wireFlows);
-          markConductiveWires(gWithCorroded.adj, [lo], ['BAT_NEG'], 'DC', 0.3, wireFlows);
+          const branchAmps = ohms > 0 ? Number((vDC / ohms).toFixed(2)) : 0;
+          markConductiveWires(gWithCorroded.adj, ['BAT_POS'], [hi], 'DC', 0.3, wireFlows, branchAmps);
+          markConductiveWires(gWithCorroded.adj, [lo], ['BAT_NEG'], 'DC', 0.3, wireFlows, branchAmps);
         }
       }
     }
@@ -815,8 +822,9 @@ export function solveCircuit(
         if (recordWireFlow) {
           const hi = dsuClean.same(p1, 'ALT_YELLOW') ? p1 : p2;
           const lo = hi === p1 ? p2 : p1;
-          markConductiveWires(gClean.adj, ['ALT_YELLOW'], [hi], 'AC', vAC / 12, wireFlows);
-          markConductiveWires(gClean.adj, [lo], ['ALT_GND'], 'AC', vAC / 12, wireFlows);
+          const branchAmps = ohms > 0 ? Number((vAC / ohms).toFixed(2)) : 0;
+          markConductiveWires(gClean.adj, ['ALT_YELLOW'], [hi], 'AC', vAC / 12, wireFlows, branchAmps);
+          markConductiveWires(gClean.adj, [lo], ['ALT_GND'], 'AC', vAC / 12, wireFlows, branchAmps);
         }
       } else if (
         (dsuCorroded.same(p1, 'ALT_YELLOW') && dsuCorroded.same(p2, 'ALT_GND')) ||
@@ -840,19 +848,20 @@ export function solveCircuit(
   };
 
   if (acYellowRegulated && rawSpulAC > 13.6) {
-    markConductiveWires(gClean.adj, ['ALT_YELLOW'], ['REG_YELLOW'], 'AC', 0.8, wireFlows);
-    markConductiveWires(gClean.adj, ['REG_GND'], ['ALT_GND'], 'AC', 0.8, wireFlows);
+    markConductiveWires(gClean.adj, ['ALT_YELLOW'], ['REG_YELLOW'], 'AC', 0.8, wireFlows, 1.5);
+    markConductiveWires(gClean.adj, ['REG_GND'], ['ALT_GND'], 'AC', 0.8, wireFlows, 1.5);
   }
   if (batteryCharging) {
-    markConductiveWires(gClean.adj, ['ALT_WHITE'], ['REG_WHITE'], 'AC', 0.9, wireFlows);
-    markConductiveWires(gClean.adj, ['REG_RED'], ['BAT_POS'], 'DC', 0.9, wireFlows);
-    markConductiveWires(gClean.adj, ['BAT_NEG'], ['REG_GND'], 'DC', 0.9, wireFlows);
+    const chargeAmps = Number((1.8 + (effectiveRpm / 8000) * 2.2).toFixed(2));
+    markConductiveWires(gClean.adj, ['ALT_WHITE'], ['REG_WHITE'], 'AC', 0.9, wireFlows, chargeAmps);
+    markConductiveWires(gClean.adj, ['REG_RED'], ['BAT_POS'], 'DC', 0.9, wireFlows, chargeAmps);
+    markConductiveWires(gClean.adj, ['BAT_NEG'], ['REG_GND'], 'DC', 0.9, wireFlows, chargeAmps);
   }
 
   const loadVoltages: Record<string, number> = {};
   const corrodedLoads = new Set<string>();
   for (const ld of loadDefs.slice(0, 15)) {
-    const { vDC, vAC, droppedByCorrosion } = evalTwoPin(ld.p1, ld.p2, ld.intact, true);
+    const { vDC, vAC, droppedByCorrosion } = evalTwoPin(ld.p1, ld.p2, ld.intact, true, ld.ohms);
     loadVoltages[ld.id] = Math.max(vDC, vAC);
     if (droppedByCorrosion) corrodedLoads.add(ld.id);
   }
@@ -932,6 +941,33 @@ export function solveCircuit(
     },
     multimeterReading,
     testLampBrightness,
+    clampReading: (() => {
+      let currentAmps = 0;
+      let mode: 'DC' | 'AC' = tools.clampMode || 'DC';
+      let activeWireLabel = '';
+      let wireColor = '';
+      let wireId = '';
+
+      if (tools.activeTool === 'CLAMP_METER' && tools.clampWireId) {
+        const targetWire = wires.find((w) => w.id === tools.clampWireId);
+        if (targetWire) {
+          const flow = wireFlows[targetWire.id];
+          currentAmps = flow?.currentAmps || 0;
+          mode = flow && flow.mode === 'AC' ? 'AC' : (tools.clampMode || 'DC');
+          activeWireLabel = `${targetWire.from} ➔ ${targetWire.to}`;
+          wireColor = targetWire.color;
+          wireId = targetWire.id;
+        }
+      }
+
+      return {
+        currentAmps,
+        mode,
+        activeWireLabel,
+        wireColor,
+        wireId,
+      };
+    })(),
   };
 }
 

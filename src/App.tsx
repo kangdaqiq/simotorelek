@@ -187,6 +187,8 @@ export function App() {
     testLampClipPin: 'GND_1',
     testLampTipPin: null,
     testLampTargetNext: 'TIP',
+    clampWireId: null,
+    clampMode: 'DC',
   });
 
   const kickTimeoutRef = useRef<number | null>(null);
@@ -862,10 +864,31 @@ export function App() {
     setFocusedPin((prev) => (prev === pinId ? null : pinId));
   }, []);
 
+  const handleClampWire = useCallback(
+    (wireId: string) => {
+      setTools((t) => ({ ...t, clampWireId: t.clampWireId === wireId ? null : wireId }));
+      if (activeChallenge) {
+        setChallengeStats((st) => ({ ...st, usedDiagnosticTool: true }));
+      }
+    },
+    [activeChallenge]
+  );
+
   const handlePinTap = useCallback(
     (pinId: PinId, e: React.PointerEvent) => {
       setSelectedWireId(null);
       setFocusedPin(null);
+
+      if (tools.activeTool === 'CLAMP_METER') {
+        const found = [...wires].reverse().find((w) => w.from === pinId || w.to === pinId);
+        if (found) {
+          setTools((t) => ({ ...t, clampWireId: t.clampWireId === found.id ? null : found.id }));
+          if (activeChallenge) {
+            setChallengeStats((st) => ({ ...st, usedDiagnosticTool: true }));
+          }
+        }
+        return;
+      }
 
       if (tools.activeTool === 'MULTIMETER') {
         if (activeChallenge) {
@@ -1438,6 +1461,8 @@ export function App() {
           wireStyle={wireStyle}
           compactGround={compactGround}
           showCurrentFlow={showCurrentFlow}
+          clampWireId={tools.clampWireId}
+          onClampWire={handleClampWire}
         />
 
         <InstrumentLeadsOverlay
@@ -1622,6 +1647,24 @@ export function App() {
             }`}
           >
             📟 AVO Meter
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setPendingFromPin(null);
+              setTools((t) => ({
+                ...t,
+                activeTool: t.activeTool === 'CLAMP_METER' ? 'WIRE' : 'CLAMP_METER',
+              }));
+            }}
+            className={`px-3 py-2.5 rounded-xl text-xs font-black transition cursor-pointer ${
+              tools.activeTool === 'CLAMP_METER'
+                ? 'bg-amber-400 text-slate-950 shadow'
+                : 'bg-slate-800 text-amber-300 hover:bg-slate-700 border border-amber-500/40'
+            }`}
+          >
+            🧲 Tang Ampere
           </button>
 
           <button
