@@ -199,12 +199,20 @@ export function App() {
   }, []);
 
   const [tickTimeMs, setTickTimeMs] = useState(() => performance.now());
+  const needsActiveTick =
+    switches.turnPos !== 'OFF' ||
+    switches.hazardOn ||
+    ((switches.starterPressed || switches.kickStartActive) && !switches.engineRunning);
+
   useEffect(() => {
+    if (!needsActiveTick) return;
+    // Smart TV optimization: 100ms interval (10 FPS) is ample for 360ms flasher blink
+    // and eliminates 100% CPU lock on low-power TV/IFP ARM chipsets when idle!
     const id = window.setInterval(() => {
       setTickTimeMs(performance.now());
-    }, 50);
+    }, 100);
     return () => window.clearInterval(id);
-  }, []);
+  }, [needsActiveTick]);
 
   useEffect(() => {
     if (!activeChallenge || challengeResultOpen) return;

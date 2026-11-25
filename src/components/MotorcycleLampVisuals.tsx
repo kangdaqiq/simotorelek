@@ -6,7 +6,7 @@ interface HeadlampVisualProps {
   health: ComponentHealth;
 }
 
-export const HeadlampAssemblyVisual: React.FC<HeadlampVisualProps> = ({ loads, health }) => {
+export const HeadlampAssemblyVisual: React.FC<HeadlampVisualProps> = React.memo(({ loads, health }) => {
   const lo = Math.min(1, Math.max(0, loads.headLo));
   const hi = Math.min(1, Math.max(0, loads.headHi));
   const senja = Math.min(1, Math.max(0, loads.senjaFront));
@@ -66,7 +66,7 @@ export const HeadlampAssemblyVisual: React.FC<HeadlampVisualProps> = ({ loads, h
 
       <svg
         viewBox="0 0 360 230"
-        className="w-full h-full max-h-[225px] select-none pointer-events-none drop-shadow-xl"
+        className="w-full h-full max-h-[225px] select-none pointer-events-none"
       >
         <defs>
           <linearGradient id="cowlBody" x1="0" y1="0" x2="0" y2="1">
@@ -100,13 +100,6 @@ export const HeadlampAssemblyVisual: React.FC<HeadlampVisualProps> = ({ loads, h
             <stop offset="78%" stopColor="#fde047" stopOpacity="0.8" />
             <stop offset="100%" stopColor="#facc15" stopOpacity="0" />
           </radialGradient>
-          <filter id="lampBloom" x="-35%" y="-35%" width="170%" height="170%">
-            <feGaussianBlur stdDeviation="6" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
         </defs>
 
         {/* Handlebar Mirror Stalk Hints & Top Smoked Visor */}
@@ -141,7 +134,7 @@ export const HeadlampAssemblyVisual: React.FC<HeadlampVisualProps> = ({ loads, h
         />
 
         {/* ==================== LEFT WING TURN SIGNAL (SEIN KIRI L) ==================== */}
-        <g filter={turnLOn ? 'url(#lampBloom)' : undefined}>
+        <g>
           <path
             d="M 38 68 Q 74 48 104 60 L 95 128 Q 64 132 42 106 Z"
             fill={turnLOn ? `rgba(249, 115, 22, ${0.45 + turnL * 0.55})` : '#291d12'}
@@ -176,7 +169,7 @@ export const HeadlampAssemblyVisual: React.FC<HeadlampVisualProps> = ({ loads, h
         </text>
 
         {/* ==================== RIGHT WING TURN SIGNAL (SEIN KANAN R) ==================== */}
-        <g filter={turnROn ? 'url(#lampBloom)' : undefined}>
+        <g>
           <path
             d="M 322 68 Q 286 48 256 60 L 265 128 Q 296 132 318 106 Z"
             fill={turnROn ? `rgba(249, 115, 22, ${0.45 + turnR * 0.55})` : '#291d12'}
@@ -220,7 +213,7 @@ export const HeadlampAssemblyVisual: React.FC<HeadlampVisualProps> = ({ loads, h
         />
 
         {/* V-Shaped Position / DRL Eyebrows (LAMPU SENJA DEPAN) */}
-        <g filter={senjaOn ? 'url(#lampBloom)' : undefined}>
+        <g>
           <path
             d="M 118 59 L 172 68 L 166 77 L 114 70 Z"
             fill={senjaOn ? `rgba(253, 230, 138, ${0.5 + senja * 0.5})` : '#1e293b'}
@@ -244,7 +237,7 @@ export const HeadlampAssemblyVisual: React.FC<HeadlampVisualProps> = ({ loads, h
         />
 
         {/* UPPER CHAMBER: LOW BEAM (LAMPU DEKAT / LO) */}
-        <g filter={loOn ? 'url(#lampBloom)' : undefined}>
+        <g>
           <path
             d="M 116 76 Q 180 82 244 76 L 248 124 Q 180 130 112 124 Z"
             fill={loOn ? 'url(#beamLoGrad)' : 'rgba(15, 23, 42, 0.45)'}
@@ -276,7 +269,7 @@ export const HeadlampAssemblyVisual: React.FC<HeadlampVisualProps> = ({ loads, h
         <path d="M 109 125 Q 180 132 251 125" stroke="#94a3b8" strokeWidth="2.5" fill="none" />
 
         {/* LOWER CHAMBER: HIGH BEAM (LAMPU JAUH / HI) */}
-        <g filter={hiOn ? 'url(#lampBloom)' : undefined}>
+        <g>
           <path
             d="M 112 127 Q 180 133 248 127 Q 233 172 180 185 Q 127 172 112 127 Z"
             fill={hiOn ? 'url(#beamHiGrad)' : 'rgba(15, 23, 42, 0.55)'}
@@ -336,14 +329,14 @@ export const HeadlampAssemblyVisual: React.FC<HeadlampVisualProps> = ({ loads, h
       </svg>
     </div>
   );
-};
+});
 
 interface TaillampVisualProps {
   loads: SimulationResult['loads'];
   health: ComponentHealth;
 }
 
-export const TaillampAssemblyVisual: React.FC<TaillampVisualProps> = ({ loads, health }) => {
+export const TaillampAssemblyVisual: React.FC<TaillampVisualProps> = React.memo(({ loads, health }) => {
   const kota = Math.min(1, Math.max(0, loads.tailSenja));
   const stop = Math.min(1, Math.max(0, loads.tailStop));
   const turnL = Math.min(1, Math.max(0, loads.turnRearL));
@@ -405,7 +398,7 @@ export const TaillampAssemblyVisual: React.FC<TaillampVisualProps> = ({ loads, h
 
       <svg
         viewBox="0 0 360 175"
-        className="w-full h-full max-h-[175px] select-none pointer-events-none drop-shadow-xl"
+        className="w-full h-full max-h-[175px] select-none pointer-events-none"
       >
         <defs>
           <linearGradient id="rearBodyGrad" x1="0" y1="0" x2="0" y2="1">
@@ -418,13 +411,6 @@ export const TaillampAssemblyVisual: React.FC<TaillampVisualProps> = ({ loads, h
             <stop offset="68%" stopColor="#ef4444" />
             <stop offset="100%" stopColor="#991b1b" />
           </radialGradient>
-          <filter id="rearBloom" x="-35%" y="-35%" width="170%" height="170%">
-            <feGaussianBlur stdDeviation="5.5" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
         </defs>
 
         {/* Top Rear Behel / Grab Rail Silhouette */}
@@ -448,7 +434,7 @@ export const TaillampAssemblyVisual: React.FC<TaillampVisualProps> = ({ loads, h
         <rect x="163" y="131" width="34" height="7" rx="2" fill="#7f1d1d" stroke="#dc2626" strokeWidth="0.8" />
 
         {/* ==================== LEFT REAR TURN SIGNAL WING (SEIN KIRI L) ==================== */}
-        <g filter={turnLOn ? 'url(#rearBloom)' : undefined}>
+        <g>
           <path
             d="M 38 58 L 106 52 L 98 106 L 54 104 Q 34 86 38 58 Z"
             fill={turnLOn ? `rgba(249, 115, 22, ${0.45 + turnL * 0.55})` : '#291d12'}
@@ -480,7 +466,7 @@ export const TaillampAssemblyVisual: React.FC<TaillampVisualProps> = ({ loads, h
         </text>
 
         {/* ==================== RIGHT REAR TURN SIGNAL WING (SEIN KANAN R) ==================== */}
-        <g filter={turnROn ? 'url(#rearBloom)' : undefined}>
+        <g>
           <path
             d="M 322 58 L 254 52 L 262 106 L 306 104 Q 326 86 322 58 Z"
             fill={turnROn ? `rgba(249, 115, 22, ${0.45 + turnR * 0.55})` : '#291d12'}
@@ -512,7 +498,7 @@ export const TaillampAssemblyVisual: React.FC<TaillampVisualProps> = ({ loads, h
         </text>
 
         {/* ==================== CENTER RUBY STOPLAMP (KOTA & REM) ==================== */}
-        <g filter={stopOn || kotaOn ? 'url(#rearBloom)' : undefined}>
+        <g>
           {/* Main Ruby Lens */}
           <path
             d="M 112 48 Q 180 38 248 48 L 254 108 Q 180 126 106 108 Z"
@@ -583,4 +569,4 @@ export const TaillampAssemblyVisual: React.FC<TaillampVisualProps> = ({ loads, h
       </svg>
     </div>
   );
-};
+});

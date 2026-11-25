@@ -35,7 +35,7 @@ interface EngineBoardProps {
   ) => void;
 }
 
-export const EngineBoard: React.FC<EngineBoardProps> = ({
+export const EngineBoard: React.FC<EngineBoardProps> = React.memo(({
   wires,
   slots,
   onToggleSlot,
@@ -770,4 +770,4 @@ export const EngineBoard: React.FC<EngineBoardProps> = ({
       </div>
     </div>
   );
-};
+});

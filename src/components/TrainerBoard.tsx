@@ -35,7 +35,7 @@ interface TrainerBoardProps {
   ) => void;
 }
 
-export const TrainerBoard: React.FC<TrainerBoardProps> = ({
+export const TrainerBoard: React.FC<TrainerBoardProps> = React.memo(({
   wires,
   slots,
   onToggleSlot,
@@ -738,4 +738,4 @@ export const TrainerBoard: React.FC<TrainerBoardProps> = ({
       </div>
     </div>
   );
-};
+});

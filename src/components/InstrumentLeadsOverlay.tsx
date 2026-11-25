@@ -29,7 +29,7 @@ function buildLeadCurve(from: Point, to: Point, bowSide = 1): string {
   return `M ${from.x} ${from.y} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${to.x} ${to.y}`;
 }
 
-export const InstrumentLeadsOverlay: React.FC<InstrumentLeadsOverlayProps> = ({
+export const InstrumentLeadsOverlay: React.FC<InstrumentLeadsOverlayProps> = React.memo(({
   tools,
   pinCoords,
   jackCoords,
@@ -114,15 +114,9 @@ export const InstrumentLeadsOverlay: React.FC<InstrumentLeadsOverlayProps> = ({
 
     return (
       <svg className="absolute inset-0 w-full h-full pointer-events-none z-45 overflow-visible">
-        <defs>
-          <filter id="probeShadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="4" stdDeviation="3" floodColor="#000000" floodOpacity="0.75" />
-          </filter>
-        </defs>
-
         {/* BLACK COM TEST LEAD */}
         {jackCoords.blackJack && blackStick && (
-          <g filter="url(#probeShadow)">
+          <g>
             <path
               d={buildLeadCurve(jackCoords.blackJack, blackStick.tail, -1)}
               fill="none"
@@ -152,7 +146,7 @@ export const InstrumentLeadsOverlay: React.FC<InstrumentLeadsOverlayProps> = ({
 
         {/* RED (+) V/OHM TEST LEAD */}
         {jackCoords.redJack && redStick && (
-          <g filter="url(#probeShadow)">
+          <g>
             <path
               d={buildLeadCurve(jackCoords.redJack, redStick.tail, 1)}
               fill="none"
@@ -190,15 +184,9 @@ export const InstrumentLeadsOverlay: React.FC<InstrumentLeadsOverlayProps> = ({
 
   return (
     <svg className="absolute inset-0 w-full h-full pointer-events-none z-45 overflow-visible">
-      <defs>
-        <filter id="tespenShadow" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="4" stdDeviation="3" floodColor="#000000" floodOpacity="0.75" />
-        </filter>
-      </defs>
-
       {/* ALLIGATOR CLIP GROUND WIRE */}
       {jackCoords.testClipOrigin && clipTarget && (
-        <g filter="url(#tespenShadow)">
+        <g>
           <path
             d={buildLeadCurve(jackCoords.testClipOrigin, clipTarget, -1)}
             fill="none"
@@ -223,7 +211,7 @@ export const InstrumentLeadsOverlay: React.FC<InstrumentLeadsOverlayProps> = ({
 
       {/* BRASS / TRANSPARENT GLOWING TEST PEN PROBE */}
       {jackCoords.testTipOrigin && tipTarget && (
-        <g filter="url(#tespenShadow)">
+        <g>
           <path
             d={buildLeadCurve(
               jackCoords.testTipOrigin,
@@ -283,4 +271,4 @@ export const InstrumentLeadsOverlay: React.FC<InstrumentLeadsOverlayProps> = ({
       )}
     </svg>
   );
-};
+});

@@ -20,7 +20,7 @@ interface BananaSocketProps {
   labelPos?: 'top' | 'bottom' | 'left' | 'right';
 }
 
-export const BananaSocket: React.FC<BananaSocketProps> = ({
+export const BananaSocket: React.FC<BananaSocketProps> = React.memo(({
   pinId,
   label,
   subLabel,
@@ -154,4 +154,4 @@ export const BananaSocket: React.FC<BananaSocketProps> = ({
       </div>
     </div>
   );
-};
+});

@@ -155,7 +155,7 @@ function buildTrunkingPath(
   };
 }
 
-export const WireOverlay: React.FC<WireOverlayProps> = ({
+export const WireOverlay: React.FC<WireOverlayProps> = React.memo(({
   wires,
   pinCoords,
   boardSize,
@@ -247,12 +247,6 @@ export const WireOverlay: React.FC<WireOverlayProps> = ({
 
   return (
     <svg className="absolute inset-0 w-full h-full pointer-events-none z-20 overflow-visible">
-      <defs>
-        <filter id="wireShadow" x="-10%" y="-10%" width="120%" height="120%">
-          <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#000000" floodOpacity="0.6" />
-        </filter>
-      </defs>
-
       {orderedWires.map(({ w, idx }) => {
         const p1 = pinCoords[w.from];
         const p2 = pinCoords[w.to];
@@ -360,7 +354,6 @@ export const WireOverlay: React.FC<WireOverlayProps> = ({
               stroke={isSelected ? '#fbbf24' : '#020617'}
               strokeWidth={isSelected ? 8.5 : 6}
               strokeLinecap="round"
-              filter="url(#wireShadow)"
               className="pointer-events-none"
             />
 
@@ -468,4 +461,4 @@ export const WireOverlay: React.FC<WireOverlayProps> = ({
       )}
     </svg>
   );
-};
+});
